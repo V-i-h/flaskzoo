@@ -9,6 +9,9 @@ from animal import Animal
 from avaliacao import Avaliacao
 from sqlalchemy.orm import sessionmaker
 from textblob import TextBlob
+from googletrans import Translator 
+
+
 # definindo objeto flask
 app = Flask(__name__)
 
@@ -65,6 +68,13 @@ Avaliacao = Base.classes.avaliacao
 
 # Criar a sessão do SQLAlchemy
 Session = sessionmaker(bind=engine)
+translator = Translator()
+
+
+
+def traduzir_texto(texto, src_lang='pt', dest_lang='en'):
+    translated = translator.translate(texto, src=src_lang, dest=dest_lang)
+    return translated.text
 
 # criando uma rota para renderizar a pagina
 @app.route("/",methods=['GET'])
@@ -90,26 +100,52 @@ def inserir_animal():
 
     return redirect(url_for('pagina_inicial'))
 
-@app.route('/cadastraravaliacao',methods =['POST','GET'])
+
+
+'''
+@app.route('/cadastraravaliacao',methods=['POST','GET'])
 def cadastrar_avaliacao():
-    sessao_db_flask = Session()
-    try:
-        # pegar no HTML
-        texto = request.form['texto']
-        
-        # Pegar a polaridade
-        blob = TextBlob(texto)
-        polaridade = blob.sentiment.polarity
-        avaliacao = Avaliacao(texto,polaridade)
-        sessao_db_flask.add(avaliacao)
-        sessao_db_flask.commit()    
+    # verificar inserção no banco 
+    sessao_db_cl = Session()
+     # passo 1 - pegar do HTML
+    texto_portugues = request.form['texto']
+    texto_ingles = traduzir_texto(texto_portugues)
+    # passo 2 - pegar a polaridade
+ 
+    blob = TextBlob(texto_ingles)
+    polaridade = blob.sentiment.polarity
+    avaliacao = Avaliacao(avaliacao=texto_ingles,polaridade=polaridade)
+    try:       
+        sessao_db_cl.add(avaliacao)
+        sessao_db_cl.commit()
     except:
-        sessao_db_flask.rollback()
+        sessao_db_cl.rollback()
     finally:
-         sessao_db_flask.close()
-         
+        sessao_db_cl.close()
     return redirect(url_for('mostrar_avaliacao'))
+  '''
+  
+@app.route('/cadastraravaliacao',methods=['POST','GET'])
+def cadastrar_avaliacao():
+    # verificar inserção no banco 
+    sessao_db_cl = Session()
+    texto = request.form['texto']
+     # passo 1 - pegar do HTML
+    blob_pt = TextBlob(texto)
+   
+    texto_traduzido= blob_pt.translate(from_lang='pt',to='en')
     
+    blob_en = TextBlob(str(texto_traduzido))
+    polaridade = blob_en.sentiment.polarity   
+    avaliacao = Avaliacao(avaliacao=texto_traduzido,polaridade=polaridade)
+    try:       
+        sessao_db_cl.add(avaliacao)
+        sessao_db_cl.commit()
+    except:
+        sessao_db_cl.rollback()
+    finally:
+        sessao_db_cl.close()
+    return redirect(url_for('mostrar_avaliacao'))
 @app.route('/avaliacao')
 def mostrar_avaliacao():
     return render_template ('avaliacao.html')
