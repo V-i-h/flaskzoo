@@ -136,7 +136,7 @@ def cadastrar_avaliacao():
     texto_traduzido= blob_pt.translate(from_lang='pt',to='en')
     
     blob_en = TextBlob(str(texto_traduzido))
-    polaridade = blob_en.sentiment.polarity   
+    polaridade = blob_en.sentiment.polarity    
     avaliacao = Avaliacao(avaliacao=texto_traduzido,polaridade=polaridade)
     try:       
         sessao_db_cl.add(avaliacao)
@@ -145,10 +145,22 @@ def cadastrar_avaliacao():
         sessao_db_cl.rollback()
     finally:
         sessao_db_cl.close()
-    return redirect(url_for('mostrar_avaliacao'))
+    return redirect(url_for('listar_avaliacao'))
 @app.route('/avaliacao')
 def mostrar_avaliacao():
     return render_template ('avaliacao.html')
+
+
+
+@app.route('/listaravaliacao')
+def listar_avaliacao():
+    session_db = Session()
+    avaliacoes = session_db.query(Avaliacao).all()
+
+    return render_template ('listaravaliacao.html',avaliacoes = avaliacoes)
+    
+
+
 # definindo com o programa principal 
 if __name__ == "__main__":
     app.run(debug=True)
